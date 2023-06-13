@@ -30,21 +30,13 @@
 
 
 
-```go
-func Funcation() {
-	fmt.Printf("getSum = %v , Type of getSum = %T\n", getSum, getSum)
-}
-func getSum(n1, n2 int) (sum, difference int) {
-	sum = n1 + n2
-	difference = n1 - n2
-	return
-}
-```
+## 数组
 
 
 
-![image-20230612200437027](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/md/image-20230612200437027.png)
+## Map
 
-![image-20230612200655996](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/md/image-20230612200655996.png)
 
-![image-20230612200718093](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/md/image-20230612200718093.png)
+
+## 结构体
+
