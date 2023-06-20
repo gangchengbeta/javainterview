@@ -1,10 +1,53 @@
 ## GO学习笔记
 
+### 字符串
+#### Q1. 什么是string
+字符串的本质是**不可修改的byte数组**
+#### Q2. string 的遍历
+
+```go
+func LearnString() {
+	s := "GOLANG"
+	fmt.Println(s)
+	for i, ele := range s {
+		fmt.Printf("%d %c\n", i, ele)
+	}
+	// s[0] = `f`   cannot assign to s[0] (value of type byte)
+	fmt.Println(len(s)) // 6
+	a := "golang你好"
+	// 一般来说 一个汉字占3个字节
+	fmt.Println(len(a))   // 12
+	arr := []rune(a)      // 将string转换为rune切片 可以求得正确的长度
+	fmt.Println(len(arr)) // 8
+	for _, ele := range a {
+		fmt.Printf("%c\n", ele)
+	}
+}
+```
+
+#### Q3. string 的拼接
+
+```go
+	// 字符串的拼接
+	// 1. 使用+号 
+	c := s + a
+	fmt.Println(c)
+	// 2. 使用fmt.Sprintf
+	d := fmt.Sprint(s, a)
+	fmt.Println(d)
+	// 3. 使用strings.Join
+	e := strings.Join([]string{s, a}, "")
+	fmt.Println(e)
+```
+
+
+
+![image-20230620113724079](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620113724079.png)
+
 ### 指针
 
-#### 指针介绍
 
-#####  1. 什么是指针
+#### Q1. 什么是指针
 
 >在计算机科学中，指针（Pointer）是一种变量，它存储了一个内存地址的值。简单来说，指针是一个用于存储内存地址的变量。这个地址可以是任何数据（如整数、字符、数组、对象等）在内存中的位置。
 >
@@ -14,7 +57,7 @@
 >
 >指针的使用需要小心谨慎，因为错误的指针操作可能会导致程序崩溃或产生难以调试的错误。正确地使用指针可以提高程序的效率和灵活性，但也需要程序员对内存管理有一定的了解和责任。
 
-#####  2. Go 的指针和 C 语言的指针有什么区别
+####  Q2. Go 的指针和 C 语言的指针有什么区别
 
 1. 指针声明和操作符：在 C 语言中，使用星号（*）来声明指针类型和进行间接引用操作，而在 Go 语言中，指针类型使用 `*` 进行声明，但间接引用操作使用`.` 运算符，而不是 `*`
 2. 空指针：在 C 语言中，可以将指针设置为 NULL，表示指针不指向任何有效的内存地址。而在 Go 语言中，使用 `nil` 表示空指针
@@ -30,7 +73,7 @@
 
 函数本质是一个指针 指向其函数的内存地址
 
-#### 匿名函数:
+#### Q1. 匿名函数:
 
 ```go
 //匿名函数
@@ -47,13 +90,13 @@
 	}(2, 3)
 ```
 
-#### defer: 延迟执行函数
+#### Q2. defer: 延迟执行函数
 
 1. 延迟执行的函数会被压入一个栈中 return之后按照先进后出的顺序调用
 2. 延迟执行的函数其参数会立即求值
 3. defer常用于资源释放、文件关闭、解锁以及记录时间等操作
 
-#### recover 错误捕捉 函数能防止异常错误退出:
+#### Q3. recover 错误捕捉 函数能防止异常错误退出:
 
 ```go
 func DeferRecover() {
@@ -67,9 +110,7 @@ func DeferRecover() {
 	fmt.Println(3 / n)
 }
 ```
-#### 函数闭包
-
-##### 什么是闭包
+#### Q4.  什么是闭包
 
 >Go 语言支持函数闭包（Function Closure）。闭包是指一个函数值（函数变量）捕获并绑定了其周围的函数体内的变量。这意味着闭包函数可以访问并操作其外部函数中声明的变量，即使外部函数已经返回，闭包仍然可以使用这些变量。
 >
@@ -112,19 +153,77 @@ func DeferRecover() {
 
 
 
-## 数组
+### 数组
 
 
 
-## Map
+### Map
+
+#### Q1: map是什么
+
+在Go语言中，map是一种无序的键值对的集合。它是一种引用类型，可以像其他引用类型一样通过make函数进行初始化。map的键可以是任何可比较类型，例如字符串、数字、结构体等，而值可以是任何类型。map的底层实现是哈希表(类似Java的HashMap?)，因此可以在O(1)时间复杂度内完成插入、查找和删除操作。如果需要使用map，请确保在使用前进行初始化
+
+> Java的HashMap 和Golang的map的异同
+>
+> Java的HashMap和Go的map都是键值对的集合，但是它们在实现上有一些不同。Java的HashMap是基于哈希表实现的，而Go的map也是基于哈希表实现的。但是，Java的HashMap允许键和值为null，而Go的map不允许键为nil。此外，Java的HashMap是线程不安全的，需要使用Collections.synchronizedMap()方法或者ConcurrentHashMap来保证线程安全，而Go的map是并发安全的，可以在多个goroutine中同时使用。
+
+#### Q2: map的增删改查和遍历
+
+```go
+// Map 键值对
+func Map() {
+
+	var m0 map[string]string
+	fmt.Println(m0)
+	m0 = make(map[string]string, 16)
+	fmt.Println(m0)
+	m1 := map[string]string{
+		"name": "张三",
+		"age":  "18",
+		"id":   strings.ReplaceAll(uuid.New().String(), "-", ""), // 生成uuid
+	}
+	fmt.Println(m1)
+
+	// map的插入
+	m1["password"] = "123"
+	fmt.Println(m1)
+	// 修改
+	m1["age"] = "100"
+	fmt.Println(m1)
+
+	// 查找
+	v, ok := m1["name1"]
+	if ok {
+		fmt.Println(v)
+	} else {
+		fmt.Println("不存在")
+	}
+
+	// map的遍历
+	for key, value := range m1 {
+		fmt.Println(key, "=", value)
+	}
+	// 删除 通过delete(map,key)函数删除单个元素
+	// 删除不存在的元素也不会报错
+	delete(m1, "name")
+	fmt.Println(m1)
+	// 删除所有元素 通过make()函数重新make一次 或者指向nil
+	m1 = nil
+	m2 := make(map[string]string, 16)
+	fmt.Println(m1)
+	fmt.Println(m2)
+}
+```
 
 
 
-## 结构体
+![image-20230620114318713](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620114318713.png)
 
-## 切片
+### 结构体
 
-###  Q1: 切片是什么
+###  切片
+
+#### Q1: 切片是什么
 在go的源文件中,切片底层是一个结构体
 
 ```go
@@ -135,6 +234,70 @@ type slice struct {
 }
 ```
 
+#### Q2: 切片的赋值/拷贝
+
 当 brr:=arr时,会拷贝slice1给slice2,但是他们Pointer 指针指向的是同一个底层数组 因此操作切片2的同时切片1的内容也会发生变化
 
 ![image-20230620105124794](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620105124794.png)
+
+对切片的修改结果会相互影响
+
+```go
+func AppendDemo() {
+	arr := make([]int, 3, 5)
+	arr[0], arr[1], arr[2] = 2, 7, 9
+	//底层数组 : 2, 7, 9, 8
+	brr := append(arr, 8)
+	// brr和arr共享底层数组 因此修改arr会影响brr 反之亦然
+	fmt.Println(len(arr))
+	fmt.Println(len(brr)) 
+	//底层数组 : 2, 7, 9, 10
+	arr = append(arr, 10)
+	fmt.Println(arr)
+	fmt.Println(brr)
+}
+```
+
+![image-20230620110146241](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620110146241.png)
+
+当切片扩容后.对切片的修改则不会再相互影响
+
+```go
+func AppendDemo() {
+	arr := make([]int, 3, 5)
+	arr[0], arr[1], arr[2] = 2, 7, 9
+	//底层数组 : 2, 7, 9, 8
+	brr := append(arr, 8)
+	// brr和arr共享底层数组 因此修改arr会影响brr 反之亦然
+	fmt.Println(len(arr)) // 3
+	fmt.Println(len(brr)) // 4
+	//底层数组 : 2, 7, 9, 10
+	arr = append(arr, 10)
+	fmt.Println(arr)
+	fmt.Println(brr)
+	fmt.Println("brr 插入 	容量满")
+	brr = append(brr, 15)
+	arr[0] = 100
+	brr[1] = 200
+	fmt.Println("容量满 arr", arr) //容量满 arr [100 200 9 10]
+	fmt.Println("容量满 brr", brr) //容量满 brr [100 200 9 10 15]
+	//根据以上运行结果可知 当容量未满时，arr和brr始终共享底层数组
+
+	fmt.Println("brr 插入  需要扩容")
+	brr = append(brr, 16)
+	arr[2] = 200
+	brr[3] = 300
+	fmt.Println("需要扩容 arr", arr) //需要扩容 arr [100 200 200 10]
+	fmt.Println("需要扩容 brr", brr) //需要扩容 brr [100 200 9 300 15 16]
+	// 根据以上运行结果可知 当容量满时，arr和brr不再共享底层数组
+	// 底层会重新分配一个数组，将原数组的值拷贝到新数组中 将新数组的地址赋值给brr的Pointer 从而对brr的修改不会影响arr
+
+}
+```
+
+![image-20230620111647876](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620111647876.png)
+
+#### Q3. 切片的遍历
+
+同数组遍历一致 可使用普通for循环或者for...range 遍历
+
