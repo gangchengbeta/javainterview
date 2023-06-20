@@ -93,8 +93,32 @@ func LearnString() {
 #### Q2. defer: 延迟执行函数
 
 1. 延迟执行的函数会被压入一个栈中 return之后按照先进后出的顺序调用
-2. 延迟执行的函数其参数会立即求值
+
+2. 当defer后接函数有参数时其参数会立即求值
+
 3. defer常用于资源释放、文件关闭、解锁以及记录时间等操作
+
+```go
+   // 闭包
+   func deferUtil() func(int) int {
+   	i := 0
+   	return func(n int) int {
+   		fmt.Printf("本次调用的参数为%v\n", n)
+   		i++
+   		fmt.Printf("deferUtil被第%v次调用\n", i)
+   		return i
+   	}
+   }
+   
+   // Defer  延迟执行函数
+   func Defer() int {
+   	f := deferUtil()
+   	defer f(f(3)) // defer的注册
+   	return f(2)
+   }
+```
+
+![image-20230620120558487](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620120558487.png)
 
 #### Q3. recover 错误捕捉 函数能防止异常错误退出:
 
@@ -150,6 +174,12 @@ func DeferRecover() {
    闭包的妙处在于它可以记住之前的状态。在这个例子中，无论我们调用多少次闭包函数，它都会记住每次调用的计数值，并保持连续增加。这是因为**闭包函数持有对外部变量的引用**，而不是简单地创建新的变量副本。
 
 
+
+
+
+### 接口
+
+#### Q1. go中接口是什么
 
 
 
