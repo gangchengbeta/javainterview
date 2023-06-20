@@ -331,3 +331,358 @@ func AppendDemo() {
 
 同数组遍历一致 可使用普通for循环或者for...range 遍历
 
+
+
+### 时间操作
+
+```go
+const (
+	DATE = "2006-01-02"          // 代表年月日
+	TIME = "2006-01-02 15:04:05" // 代表年月日时分秒
+)
+
+// 时间常见操作
+func PackageTime() {
+	// 获取当前时间
+	now := time.Now()
+	fmt.Println(now.Unix())
+
+	fmt.Println()
+	//休眠
+	for i := 0; i < 5; i++ {
+		fmt.Print(".")
+		time.Sleep(time.Millisecond * 2)
+	}
+	fmt.Println()
+	// 两个时刻之差
+	t1 := time.Now()
+	diff := t1.Sub(now)
+	fmt.Println(diff.Milliseconds())            // 获取时间差毫秒数
+	fmt.Println(time.Since(now).Milliseconds()) // 获取时间差
+
+	// 计算时间的加法
+	// time + duration = time
+	d := 2 * time.Second
+	t2 := t1.Add(d)
+	fmt.Println(t2.Unix())
+
+	// 时间转换
+	duration, err := time.ParseDuration("1000s")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(duration)
+
+	// 时间的格式化
+	fmt.Println(now.Format(DATE)) //2023-06-20
+	s := now.Format(TIME)
+	fmt.Println(s) //2023-06-20 17:14:34
+
+	// 时间的解析
+	loc, _ := time.LoadLocation("Asia/Shanghai")	// 构造时区
+	t3, _ := time.ParseInLocation(TIME, s, loc)
+	fmt.Println(t3.Unix())
+
+}
+
+```
+
+![image-20230620172121482](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620172121482.png)
+
+### 读写文件操作
+
+```go
+// 文件操作
+// 判断文件是否存在
+func fileExist(path string) bool {
+	fileInfo, err := os.Stat(path)
+	if err == nil {
+		return !fileInfo.IsDir()
+	}
+	return os.IsExist(err)
+}
+
+// 根据文件路径创建文件夹
+func createDir(path string) error {
+	paths := strings.Split(path, "/")
+	fmt.Println(paths)
+	var dirPath = ""
+	for i, v := range paths {
+		if i == len(paths)-1 {
+			break
+		}
+		if i != 0 {
+			dirPath += "/"
+		}
+		dirPath += v
+	}
+	fmt.Println(dirPath)
+	return os.MkdirAll(dirPath, os.ModePerm)
+}
+func FileOperation() {
+	//dir := readDir("D:\\CodeProjects")
+	//fmt.Println(dir)
+	fileRW("d1.txt")
+}
+
+// 读取文件夹下的所有文件
+func readDir(path string) []string {
+	var file = make([]string, 16)
+	dirEntries, err := os.ReadDir(path)
+	if err != nil {
+		panic(err)
+	}
+	for _, entry := range dirEntries {
+		file = append(file, entry.Name())
+	}
+	return file
+}
+
+// 文件读写
+func fileRW(path string) {
+	// 打开文件
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644) //os.O_TRUNC 清空文件 os.O_APPEND 追加写入
+	if err != nil {
+		panic(err)
+	}
+	// 关闭文件
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(file)
+
+	//读文件
+	readByteSlice := make([]byte, 1024)
+	read, err := file.Read(readByteSlice)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(readByteSlice[:read]))
+	//写入文件
+	context := "大多大事单倍行距阿萨德大萨达是多少收到是是"
+	write, err := file.WriteString(context)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(write) // 成功向文件中写入了多少字节
+
+	//writer := bufio.NewWriter(file)
+	//_, err = writer.WriteString("hello world")
+	//if err != nil {
+	//	panic(err)
+	//}
+	// 刷新缓冲区
+	//err = writer.Flush()
+	//if err != nil {
+	//	panic(err)
+	//}
+}
+```
+
+**改进: 使用缓冲区优化文件读写**
+
+```go
+unc fileRWBuf(path string) {
+	// 打开文件
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	// 延时关闭文件 (必须有)
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(file)
+
+	//使用缓冲区读取文件 减少磁盘IO提高程序性能
+	reader := bufio.NewReader(file)
+	for {
+		line, err := reader.ReadString('\n') // 碰到换行符就结束读取
+
+		if err != nil {
+			// 判断是否读取到文件末尾
+			if err == io.EOF {
+				fmt.Println(line)
+				fmt.Println("文件读取完毕")
+				break
+			}
+			panic(err)
+		}
+		fmt.Print(line)
+	}
+
+	//使用缓冲区写入文件 减少磁盘IO提高程序性能
+	writer := bufio.NewWriter(file)
+	_, err = writer.WriteString("hello world")
+	if err != nil {
+		panic(err)
+	}
+	//刷新缓冲区
+	err = writer.Flush()
+	if err != nil {
+		panic(err)
+	}
+	
+}
+```
+
+### JSON序列化
+
+```go
+import (
+	"fmt"
+	"github.com/bytedance/sonic"
+)
+
+type Student struct {
+	Name   string `json:"name"`
+	Age    int    `json:"age"`
+	Gender bool   `json:"gender"`
+}
+type Class struct {
+	Id       string    `json:"id"`
+	Students []Student `json:"students slice"`
+}
+
+func SerialJSON() {
+	s :=
+		Student{"张宝磊", 58, false}
+	c := Class{
+		Id:       "1(1)班",
+		Students: []Student{s, s, s},
+	}
+	// json 序列化 通过json.Marshal()函数将一个Go语言中的结构体转换为JSON格式的字符串
+	bytes1, err1 := sonic.Marshal(c)
+	if err1 != nil {
+		panic(err1)
+	}
+	//for _, v := range bytes {
+	//	fmt.Printf("%c", v)
+	//}
+	str1 := string(bytes1)
+	fmt.Println(str1)
+
+	// json 反序列化 通过json.Unmarshal()函数将一个JSON格式的字符串转换为Go语言中的结构体
+	var c2 Class
+	err1 = sonic.Unmarshal(bytes1, &c2)
+	if err1 != nil {
+		panic(err1)
+	}
+	fmt.Printf("%v", c2)
+	// 字节跳动sonic性能更佳
+	// sonic 序列化 sonic.Marshal()函数将一个Go语言中的结构体转换为JSON格式的字符串
+	bytes, err := sonic.Marshal(c)
+	if err != nil {
+		panic(err)
+	}
+	//for _, v := range bytes {
+	//	fmt.Printf("%c", v)
+	//}
+	str := string(bytes)
+	fmt.Println(str)
+
+	// sonic 反序列化 sonic.Unmarshal()函数将一个JSON格式的字符串转换为Go语言中的结构体
+	var c1 Class
+	err = sonic.Unmarshal(bytes, &c1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%v", c1)
+
+}
+
+```
+
+![image-20230620185306349](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620185306349.png)
+
+### 单元测试&&基准测试
+
+1. 单元测试/基准测试文件名通常以 被测试文件名_test.go 命名
+2. 单元测试函数名必须以Test开头 函数参数为 t *testing.T 例如: <code>func TestSerialSonic(t *testing.T) </code>
+3. 基准测试函数名必须以Benchmark开头 函数参数问 b *testing.B 例如: <code>func BenchmarkSerialSonic(b *testing.B)  </code>
+
+```go
+package std
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/bytedance/sonic"
+	"testing"
+)
+
+// 单元测试
+var (
+	s = Student{"张宝磊", 58, false}
+	c = Class{
+		Id:       "1(1)班",
+		Students: []Student{s, s, s},
+	}
+)
+
+// TestSerialJSON 单元测试
+func TestSerialJSON(t *testing.T) {
+	marshal, err := json.Marshal(c)
+	if err != nil {
+		t.Fail()
+	}
+	var c2 Class
+	err = json.Unmarshal(marshal, &c2)
+	if err != nil {
+		t.Fail()
+	}
+	if !(c.Id == c2.Id && len(c.Students) == len(c2.Students)) {
+		t.Fail()
+	}
+
+	fmt.Println("json 没毛病")
+}
+// TestSerialSonic 单元测试
+func TestSerialSonic(t *testing.T) {
+	marshal, err := sonic.Marshal(c)
+	if err != nil {
+		t.Fail()
+	}
+	var c2 Class
+	err = sonic.Unmarshal(marshal, &c2)
+	if err != nil {
+		t.Fail()
+	}
+	if !(c.Id == c2.Id && len(c.Students) == len(c2.Students)) {
+		t.Fail()
+	}
+
+	fmt.Println("sonic 没毛病")
+}
+
+// TestSerialJSON 基准测试 
+func BenchmarkSerialJSON(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		marshal, _ := json.Marshal(c)
+		var c2 Class
+		_ = json.Unmarshal(marshal, &c2)
+	}
+}
+
+// BenchmarkSerialSonic 基准测试
+func BenchmarkSerialSonic(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		marshal, _ := sonic.Marshal(c)
+		var c2 Class
+		_ = sonic.Unmarshal(marshal, &c2)
+	}
+}
+```
+
+基准测试结果:
+
+![image-20230620192644475](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620192644475.png)
+
+![image-20230620192650101](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230620192650101.png)
+
+
+
