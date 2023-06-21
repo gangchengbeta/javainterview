@@ -686,3 +686,270 @@ func BenchmarkSerialSonic(b *testing.B) {
 
 
 
+### Channel
+
+#### Q1. 管道是什么?底层由什么数据结构实现
+
+![image-20230621165140089](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230621165140089.png)
+
+在Go语言中，管道（channel）是一种用于在多个goroutine之间进行通信和同步的机制。管道可以看作是一种特殊的队列，它具有先进先出的特性，但是与普通的队列不同的是，管道可以在多个goroutine之间进行安全的数据传输。
+
+管道的底层实现是一个带锁的队列(环形队列,FIFO)，它使用了类似于链表的数据结构来存储数据。当一个goroutine向管道中写入数据时，数据会被添加到队列的尾部；而当一个goroutine从管道中读取数据时，数据会从队列的头部被取出。由于管道是带锁的，因此在多个goroutine同时访问管道时，可以保证数据的安全性和正确性。
+
+---
+
+#### Q2. go中channel的作用
+
+1. 协程间数据的传递
+
+   ```go
+   func Channel() {
+   	// 创建管道
+   	ch := make(chan int, 1)
+   	fmt.Println(time.Now().Unix())
+   	// 从管道中读取数据
+   	go func() {
+   		a := <-ch
+   		fmt.Printf("%d 读出%d\n", time.Now().Unix(), a)
+   	}()
+   	time.Sleep(2 * time.Second)
+   	// 向管道中写入数据
+   	go func() {
+   		ch <- 4
+   		fmt.Println(time.Now().Unix(), "写入channel完成")
+   	}()
+   
+   	time.Sleep(1 * time.Second)
+   
+   }
+   ```
+
+   
+
+2. 协程间协调同步
+
+```go
+// 生产者消费者
+// 目的: 学会使用channel在协程间协调同步
+func ProducerConsumer() {
+	ch := make(chan int, 100)
+	// 生产者
+	waitGroup := sync.WaitGroup{}
+	waitGroup.Add(2) // 2个生产者
+	go func() {
+		defer waitGroup.Done()
+		for i := 0; i < 10; i++ {
+			ch <- i
+		}
+	}()
+	go func() {
+		defer waitGroup.Done()
+		for i := 0; i < 10; i++ {
+			ch <- i
+		}
+	}()
+
+	// 消费者
+	// 因为blockChan是一个无缓冲的通道,所以会阻塞在这里
+	// 设置类型为struct{}的原因是因为struct{}不占用内存空间
+	blockChan := make(chan struct{}, 0)
+	go func() {
+		sum := 0
+		for {
+			a, ojbk := <-ch
+			if !ojbk { // 通道关闭&&通道中没有数据 此时会返回false
+				break
+			}
+			sum += a
+		}
+		fmt.Printf("sum=%d\n", sum)
+		blockChan <- struct{}{}
+	}()
+	waitGroup.Wait()
+	close(ch)
+	// 会自动阻塞直到往blockChan中存放数据
+	<-blockChan
+}
+```
+
+#### Q3. 对go中的死锁的初次探究
+
+```go
+func DeadLock() {
+	ch := make(chan int, 0)
+	//go func() {
+	//	ch <- 1
+	//	fmt.Println("over")
+	//}()
+
+	//time.Sleep(time.Hour) 通过sleep会使得main协程一直阻塞
+	// ch <- 2 //通过channel阻塞main 会被系统检测到死锁 从而报错 fatal error: all goroutines are asleep - deadlock!
+	//wg := sync.WaitGroup{}
+	//wg.Add(1)
+	//go func() {
+	//	defer wg.Done()
+	//	ch <- 1
+	//	fmt.Println("over")
+	//}()
+	//
+	//wg.Wait() // 通过waitGroup阻塞main 会被系统检测到死锁 从而报错 fatal error: all goroutines are asleep - deadlock!
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ch <- 1
+		fmt.Println("over")
+	}()
+	
+	// 新加一个协程
+	go func() {
+		time.Sleep(time.Hour)
+	}()
+
+	wg.Wait() // 此时 系统不会检测到死锁 因为有一个协程在睡眠,系统无法判定在该协程睡眠过后是否会向ch中写入数据/将等待组减一 所以无法检测到死锁
+}
+```
+
+死锁小demo:
+
+![image-20230621174242261](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/java/image-20230621174242261.png)
+
+>这段代码创建了一个无缓冲的整型管道`ch`，并向管道中写入了一个整数1。由于管道是无缓冲的，因此写入操作会被阻塞，直到有其他goroutine从管道中读取数据。如果没有其他goroutine从管道中读取数据，那么写入操作将一直被阻塞，直到程序被终止或者有其他goroutine从管道中读取数据为止。
+>
+>由于管道是一种同步机制，因此在使用无缓冲管道时，写入操作和读取操作必须在不同的goroutine中进行，否则会导致死锁。如果在同一个goroutine中既进行写入操作又进行读取操作，那么程序将会被阻塞，无法继续执行。
+
+### Gorm操作数据库
+
+```go
+// 文档地址 : https://gorm.io/zh_CN/docs/update.html
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"strconv"
+)
+import "gorm.io/gorm"
+
+// User 用户表映射
+type User struct {
+	Id   int64  `json:"id"`
+	Name string `gorm:"column:uname" json:"name"`
+}
+
+var client = connectMysql()
+
+// TableName 重写表名
+func (User) TableName() string {
+	return "t_user"
+}
+func DBCURD() {
+	//user := read()
+	//if user == nil {
+	//	fmt.Println("表中没有数据")
+	//	return
+	//}
+	//fmt.Printf("读取user: %v\n", user)
+	//
+	//insert()
+	//benchInsert()
+	//readAll()
+	//update()
+	delete()
+}
+func delete() {
+
+	result := client.Where("length(id) > ?", 2).Delete(&User{})
+	fmt.Printf("删除的记录数是:%v", result.RowsAffected)
+	err := result.Error
+	handleError(err)
+}
+
+func update() {
+	user := User{
+		Id: 52222,
+		//Name: "张宝磊",
+	}
+	//err := client.Save(&user).Error
+	//handleError(err)
+	//err := client.Model(&user).Update("uname", "张宝磊儿子").Error
+	//handleError(err)
+	err := client.Model(&user).Where("id = ?", 52222).Update("uname", "张堡垒孙子").Error
+	handleError(err)
+}
+
+// 读取全部数据
+func readAll() {
+	var users []User
+	result := client.Find(&users)
+	fmt.Printf("总记录是:%v", result.RowsAffected)
+	err := result.Error
+	handleError(err)
+	fmt.Printf("读取user: %v\n", users)
+}
+
+// 读取数据
+func read() *User {
+	var user User
+	err := client.Take(&user).Error
+	handleError(err)
+	return &user
+}
+
+// 插入数据
+func insert() {
+	user := User{
+		Id:   52222,
+		Name: "coder4j",
+	}
+	err := client.Create(&user).Error
+	handleError(err)
+}
+
+func benchInsert() {
+	var users []User
+	for i := 0; i < 1000; i++ {
+		var user = User{
+			Id:   int64(52223 + i),
+			Name: "coder" + strconv.Itoa(i),
+		}
+		users = append(users, user)
+	}
+	err := client.CreateInBatches(&users, len(users)).Error
+	handleError(err)
+}
+
+// 连接数据库
+func connectMysql() *gorm.DB {
+	dataSourceName := "root:coder4jdocker@tcp(112.126.71.240:3340)/db_user?charset=utf8mb4&parseTime=True&loc=Local"
+	client, err := gorm.Open(
+		mysql.Open(dataSourceName),
+		nil,
+	)
+	handleError(err)
+	return client
+}
+
+// 处理error
+func handleError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+
+
+### Go操作Redis
+
+```go
+
+```
+
+
+
+### Gin网络编程
+
+
+
+### GRPC微服务
+
