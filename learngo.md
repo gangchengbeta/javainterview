@@ -391,6 +391,16 @@ func PackageTime() {
 
 ### 读写文件操作
 
+
+
+#### 文件访问权限
+
+![image-20230703185136299](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/note/image-20230703185136299.png)
+
+
+
+![image-20230703185258704](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com/note/image-20230703185258704.png)
+
 ```go
 // 文件操作
 // 判断文件是否存在
