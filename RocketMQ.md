@@ -1,4 +1,19 @@
+### Q1. Rocket如何保证消息队列系统的高可用性?
+
+### Q2. RocketMQ 如何避免消息的重复消费?
+
+### Q3. RocketMQ 如何避免消息的丢失?
+
+### Q4. RocketMQ 如何保证消息的按序到达?
+
+### Q5. RocketMQ 如何实现消息间的事务性?
+
+
+
+
+
 # RocketMQ路由中心NameServer
+
 ---
 ![img](https://cscgblog-1301638685.cos.ap-chengdu.myqcloud.com//md/img2843224-a7bdf308a8d3739b.png)
 > NameServer 是 RocketMQ 消息队列的状态服务器（**服务发现功能**），集群中的各个服务都需要通过 NameServer 来了解集群中各个服务的状态。
