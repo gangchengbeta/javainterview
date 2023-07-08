@@ -963,3 +963,4 @@ func handleError(err error) {
 
 ### GRPC微服务
 
+protoc  --go_out=plugins=grpc: . --proto_path=./idl -I=./idl/third_proto student_service.proto
